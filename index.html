@@ -1,0 +1,352 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>All Pro — Jobs (Step 1)</title>
+
+  <link rel="stylesheet" href="styles.css">
+
+</head>
+
+<body>
+
+  <header class="app-header">
+
+    <h1>All Pro — Jobs</h1>
+
+    <div class="header-actions">
+
+      <button id="newJob" class="primary">New Job</button>
+
+    </div>
+
+  </header>
+
+
+
+  <main class="container">
+
+    <section class="card">
+
+      <div id="jobList" class="list"></div>
+
+    </section>
+
+  </main>
+
+
+
+  <script>
+
+    // Minimal local storage (simple & robust)
+
+    const KEY='allpro_jobs';
+
+    const listEl=document.getElementById('jobList');
+
+
+
+    function load(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return []}}
+
+    function save(jobs){localStorage.setItem(KEY,JSON.stringify(jobs))}
+
+    function uid(){return Math.random().toString(36).slice(2)+Date.now().toString(36)}
+
+
+
+    function refresh(){
+
+      const jobs=load();
+
+      listEl.innerHTML='';
+
+      if(!jobs.length){
+
+        listEl.innerHTML='<p class="muted">No jobs yet. Tap New Job to start.</p>';
+
+        return;
+
+      }
+
+      jobs.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+
+      for(const j of jobs){
+
+        const row=document.createElement('div'); row.className='row';
+
+        row.innerHTML=`<div class="meta">
+
+          <strong>${j.name||'(unnamed job)'}</strong>
+
+          <small class="muted">${(j.address||'').split('\\n')[0]||''} • Updated: ${new Date(j.updatedAt||Date.now()).toLocaleString()}</small>
+
+        </div>`;
+
+        const open=document.createElement('button'); open.className='secondary'; open.textContent='Open';
+
+        open.onclick=()=>location.href='job.html?id='+j.id;
+
+        const del=document.createElement('button'); del.className='secondary'; del.textContent='Delete';
+
+        del.onclick=()=>{ if(confirm('Delete this job?')){ const all=load().filter(x=>x.id!==j.id); save(all); refresh(); } };
+
+        row.append(open,del); listEl.appendChild(row);
+
+      }
+
+    }
+
+
+
+    document.getElementById('newJob').addEventListener('click',()=>{
+
+      const name=prompt('Homeowner name (required):','');
+
+      if(name===null) return;
+
+      const jobs=load();
+
+      const job={id:uid(), name, address:'', createdAt:Date.now(), updatedAt:Date.now()};
+
+      jobs.push(job); save(jobs);
+
+      location.href='job.html?id='+job.id;
+
+    });
+
+
+
+    refresh();
+
+  </script>
+
+</body>
+
+</html>
+
+<!doctype html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Job — All Pro</title>
+
+  <link rel="stylesheet" href="styles.css">
+
+</head>
+
+<body>
+
+  <header class="app-header">
+
+    <a class="back" href="index.html">← Jobs</a>
+
+    <h1 id="jobTitle">Job</h1>
+
+  </header>
+
+
+
+  <main class="container">
+
+    <section class="card">
+
+      <h2>Job Details (starter)</h2>
+
+      <div class="grid">
+
+        <label>Homeowner <input id="jName"></label>
+
+        <label>Property Address <textarea id="jAddress" rows="2"></textarea></label>
+
+      </div>
+
+      <button id="saveJob" class="primary">Save</button>
+
+    </section>
+
+
+
+    <section class="card">
+
+      <div class="tabs">
+
+        <button class="tab active" data-tab="tab-auth">Authorization</button>
+
+        <button class="tab" data-tab="tab-cert">Certificate</button>
+
+        <button class="tab" data-tab="tab-monitor">Monitoring</button>
+
+        <button class="tab" data-tab="tab-photos">Photos</button>
+
+        <button class="tab" data-tab="tab-work">Work Performed</button>
+
+      </div>
+
+
+
+      <div id="tab-auth" class="tabpanel active">
+
+        <p class="muted">Step 2 will add full Authorization form + signature.</p>
+
+      </div>
+
+      <div id="tab-cert" class="tabpanel">
+
+        <p class="muted">Step 2 will add Certificate with checkboxes + signature.</p>
+
+      </div>
+
+      <div id="tab-monitor" class="tabpanel">
+
+        <p class="muted">Step 2 will add Monitoring: inside/outside/dehu readings, sketch, 1–40 moisture points, colors, notes.</p>
+
+      </div>
+
+      <div id="tab-photos" class="tabpanel">
+
+        <p class="muted">Step 3 will add Photos upload.</p>
+
+      </div>
+
+      <div id="tab-work" class="tabpanel">
+
+        <p class="muted">Step 3 will add Work Performed list with quantities.</p>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+
+  <script>
+
+    // simple storage (same as index)
+
+    const KEY='allpro_jobs';
+
+    function load(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return []}}
+
+    function save(j){localStorage.setItem(KEY,JSON.stringify(j))}
+
+
+
+    const params=new URLSearchParams(location.search);
+
+    const id=params.get('id');
+
+    const nameEl=document.getElementById('jName');
+
+    const addrEl=document.getElementById('jAddress');
+
+
+
+    let job=load().find(j=>j.id===id);
+
+    if(!job){ alert('Job not found'); location.href='index.html'; }
+
+
+
+    document.getElementById('jobTitle').textContent=job.name||'Job';
+
+    nameEl.value=job.name||'';
+
+    addrEl.value=job.address||'';
+
+
+
+    document.getElementById('saveJob').addEventListener('click',()=>{
+
+      const all=load();
+
+      const idx=all.findIndex(j=>j.id===id);
+
+      all[idx]={...all[idx], name:nameEl.value.trim(), address:addrEl.value.trim(), updatedAt:Date.now()};
+
+      save(all);
+
+      alert('Saved');
+
+      document.getElementById('jobTitle').textContent=nameEl.value.trim()||'Job';
+
+    });
+
+
+
+    // tabs
+
+    const tabs=document.querySelectorAll('.tab');
+
+    tabs.forEach(t=>t.addEventListener('click',()=>{
+
+      tabs.forEach(x=>x.classList.remove('active'));
+
+      document.querySelectorAll('.tabpanel').forEach(x=>x.classList.remove('active'));
+
+      t.classList.add('active');
+
+      document.getElementById(t.dataset.tab).classList.add('active');
+
+    }));
+
+  </script>
+
+</body>
+
+</html>
+
+:root{--bg:#0b0e13;--card:#101318;--text:#e6edf3;--muted:#9aa3b2;--line:#2a2f37;--accent:#2c6bed}
+
+*{box-sizing:border-box}
+
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+
+.container{max-width:980px;margin:0 auto;padding:14px}
+
+.app-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--line)}
+
+.header-actions{display:flex;gap:8px}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin:14px 0}
+
+.muted{color:var(--muted)}
+
+.list .row{display:flex;justify-content:space-between;gap:8px;align-items:center;border-bottom:1px solid var(--line);padding:10px 0}
+
+button,input,textarea,select{background:#0f131a;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px}
+
+button{cursor:pointer}
+
+button.primary{background:var(--accent);border-color:var(--accent)}
+
+button.secondary{background:#151922}
+
+.grid{display:grid;gap:8px}
+
+.grid.two{grid-template-columns:1fr 1fr}
+
+.tabs{display:flex;gap:8px;border-bottom:1px solid var(--line);margin-bottom:12px;flex-wrap:wrap}
+
+.tab{background:#1a1d23;border:1px solid var(--line);border-bottom:none;border-radius:8px 8px 0 0;padding:8px 12px;cursor:pointer}
+
+.tab.active{background:var(--accent);border-color:var(--accent)}
+
+.tabpanel{display:none}
+
+.tabpanel.active{display:block}
+
+a.back{color:var(--text);text-decoration:none}
+
